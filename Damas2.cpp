@@ -1,14 +1,14 @@
 #include <iostream>//Libreria de base 
-#include <vector>// Libreria para vecxtores dinamicos 
+#include <vector>// Libreria para vectores dinamicos 
 #include <cmath>// Libreria para funciones matematicas
 #include <string>// Libreria cadena de texto
 #include <cstdlib>// Libreria para el "cls"
+#include <fstream>// Libreria para guardar la partida 
 
 using namespace std;
 
 // ponemos como constante la dimencion del tablero sw 8*8
 const int tamaño = 8;
-
 // Representación de fichas:
 // ' ' : Casilla vacía
 // 'B' : Ficha normal blanca    
@@ -19,19 +19,38 @@ const int tamaño = 8;
 class JuegoDamas 
 {
  private:
- //Estructura principal de los datos papu :V
- //Con un arreglo bidiencional
     vector<vector<char>> tablero;
     char turnoActual; // 'B' para Blancas, 'N' para Negras
 
- public:
-    //Se fabrica el tablero con espacion en blanco 
+    // Historial para guardar cada estado del tablero tras un movimiento (hasta 500 jugadas)
+    //ahora es un arreglo tridimencional :(
+    char historial[500][tamaño][tamaño];
+    int totalMovimientos;
+
+public:
+ //Se fabrica el tablero con espacion en blanco 
     JuegoDamas() 
     {
-        //Declaramos quien inicia el juego
         tablero = vector<vector<char>>(tamaño, vector<char>(tamaño, ' '));
         inicializarTablero();
-        turnoActual = 'B'; // Declara quien inicia comienzan las fichas Blancas
+        turnoActual = 'B';
+        totalMovimientos = 0;
+        guardarEnHistorial(); // Guardar estado inicial
+    }
+ 
+    void guardarEnHistorial() 
+    {
+        if (totalMovimientos < 500) 
+        {
+            for (int i = 0; i < tamaño; ++i) 
+            {
+                for (int j = 0; j < tamaño; ++j) 
+                {
+                    historial[totalMovimientos][i][j] = tablero[i][j];
+                }
+            }
+            totalMovimientos++;
+        }
     }
 
     void inicializarTablero() 
@@ -60,9 +79,51 @@ class JuegoDamas
         }
     }
 
+    void reproducir_Partida() 
+    {
+        if (totalMovimientos <= 1) 
+        {
+            cout << "\nNo hay suficientes movimientos registrados para reproducir.\n";
+            system("pause");
+            return;
+        }
+
+        for (int m = 0; m < totalMovimientos; m++) 
+        {
+            system("cls");
+            
+            cout << " Reproduciendo Movimiento: " << m + 1 << " de " << totalMovimientos << "\n";
+  
+
+            // Cargar temporalmente el estado del historial al tablero
+            for (int i = 0; i < tamaño; i++) 
+            {
+                for (int j = 0; j < tamaño; j++) 
+                {
+                    tablero[i][j] = historial[m][i][j];
+                }
+            }
+
+            mostrarTablero();
+            cout << "Presiona Enter para ver el siguiente movimiento...";
+            cin.ignore();
+            cin.get();
+        }
+
+        system("cls");
+        cout << "==============================\n";
+        cout << "   FIN DE LA REPRODUCCION     \n";
+        cout << "==============================\n";
+        system("pause");
+    }
     void mostrarTablero() 
     //Tablero con las cordenadas 
     {
+        // Códigos ANSI para colores en consola
+        string RESET = "\033[0m";
+        string Color_Blancas = "\033[1;36m";// Azul
+        string Color_Negros = "\033[1;31m"; //Rojo
+
         cout << "\n    A   B   C   D   E   F   G   H\n";
         cout << "  ---------------------------------\n";
         for (int i = 0; i < tamaño; ++i) 
@@ -70,14 +131,63 @@ class JuegoDamas
             cout << i << " |";
             for (int j = 0; j < tamaño; ++j) 
             {
-                cout << " " << tablero[i][j] << " |";
+                char ficha = tablero[i][j];
+                cout << " ";
+                if (ficha == 'B' || ficha == 'W')
+                {
+                    cout << Color_Blancas << ficha << RESET;
+                }
+                else if (ficha == 'N' || ficha == 'M')
+                {
+                    cout << Color_Negros << ficha << RESET;
+                }
+                else
+                {
+                    cout << ficha;
+                }
+                cout << " |";
             }
             cout << " " << i << "\n";
-            cout < < "  ---------------------------------\n";
+            cout << "  ---------------------------------\n";
         }
         cout << "    A   B   C   D   E   F   G   H\n\n";
     }
 
+    void reproducirPartida() 
+    {
+        if (totalMovimientos <= 1) 
+        {
+            cout << "\nNo hay suficientes movimientos registrados para reproducir.\n";
+            system("pause");
+            return;
+        }
+
+        for (int m = 0; m < totalMovimientos; m++) 
+        {
+            system("cls");
+            cout << "================================\n";
+            cout << " Reproduciendo Movimiento: " << m + 1 << " de " << totalMovimientos << "\n";
+            cout << "================================\n\n";
+
+            // Cargar temporalmente el estado del historial al tablero
+            for (int i = 0; i < tamaño; i++) 
+            {
+                for (int j = 0; j < tamaño; j++) 
+                {
+                    tablero[i][j] = historial[m][i][j];
+                }
+            }
+
+            mostrarTablero();
+            cout << "Presiona Enter para ver el siguiente movimiento...";
+            cin.ignore();
+            cin.get();
+        }
+
+        system("cls");
+        cout << "==========FIN DE LA REPRODUCCION ==========\n";
+        system("pause");
+    }
     //Se verifica si es una ficha normal o si es una dama 
     //ya sea dama blanca o dama negra 
     bool esBlanca(char f) { return f == 'B' || f == 'W'; }
@@ -387,55 +497,84 @@ class JuegoDamas
 
 int main() 
 {
-   //Limpiar pantalla para que se vea bonito :3
-   system("cls");
-   JuegoDamas juego;
+    system("cls");
+    JuegoDamas juego;
 
-   //Mensaje de inicio
-   cout << "============== JUEGO DE DAMAS (MODO DIRECCIONES) ===============\n";
-   cout << "Ejemplo: A 5 I (Mueve la ficha de A5 hacia la izquierda)\n";
-   cout << "Fichas Claras = B (Blancas), Fichas Oscuras = N (Negras). Damas = W y M.\n\n";
+    char op;
+    cout << "===============================\n";
+    cout << "       JUEGO DE DAMAS          \n";
+    cout << "===============================\n";
+    cout << "     (1) Iniciar partida       \n";
+    cout << "     (2) Ver historial/reproducir\n";
+    cout << "===============================\n";
+    cout << "Elige una opcion: ";
+    cin >> op;
 
-   //Inicio del programa principal 
-   while (true) 
-   {
+    if (op == '2') 
+    {
+        juego.reproducirPartida();
+    }
+
+    while (true) 
+    {
+        system("cls");
         char col1, dir;
         int r1;
         
-        //Instrucciones 
         juego.mostrarTablero();
         cout << "Turno actual: " << (juego.obtenerTurno() == 'B' ? "FICHAS BLANCAS [B]" : "FICHAS NEGRAS [N]") << "\n";
-        cout << "Introduce origen y direccion (ej: A 5 D) o 'X' para salir: ";
+        cout << "Introduce origen y direccion (ej: A 5 D), o 'X' para salir: ";
         
         cin >> col1;
         if (col1 == 'X' || col1 == 'x') 
         {
-            cout << "====== JUEGOS TERMINADO POR LOS JUGADORES ======\n";
+            cout << "¿Deseas reproducir los movimientos antes de salir? (s/n): ";
+            char rep;
+            cin >> rep;
+            if (rep == 's' || rep == 'S') {
+                juego.reproducirPartida();
+            }
             break;
         }
 
         cin >> r1 >> dir;
 
-        // Convierte letras a índices numéricos (A-H -> 0-7)
         int c1 = toupper(col1) - 'A';
         
-        //Verifica que ponagas cordenadas dentro del tablero para que no se salga 
         if (c1 < 0 || c1 >= tamaño || r1 < 0 || r1 >= tamaño) 
         {
             cout << "Coordenadas fuera de rango. Intenta de nuevo.\n";
+            system("pause");
             continue;
         }
 
         if (juego.realizarMovimientoPorDireccion(r1, c1, dir)) 
         {
+            juego.mostrarTablero();
+
             if (juego.verificarFinJuego()) 
             {
-                juego.mostrarTablero();
+                cout << "\n¿Deseas reproducir la partida completa? (s/n): ";
+                char rep;
+                cin >> rep;
+                if (rep == 's' || rep == 'S') {
+                    juego.reproducirPartida();
+                }
                 break;
             }
+
+            cout << "--------------------------------------------------\n";
+            cout << "Movimiento realizado con exito. Presiona ENTER para pasar al siguiente turno...";
+            cin.ignore();
+            cin.get();    
+
             juego.cambiarTurno();
         }
-   }
+        else 
+        {
+            system("pause");
+        }
+    }
 
-   return 0;
+    return 0;
 }
